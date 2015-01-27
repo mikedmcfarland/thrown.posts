@@ -1,0 +1,55 @@
+* Finally some prototyping
+
+** Where we've been
+
+  It's been far too long since anything was prototyped in It Rains Fish.
+  A long time ago, some paper prototyping was done;
+  but it was pretty painful to do even simple games with paper.
+  This was still very helpful in eliminating many bad ideas, but it didn't let us
+  adequately test many ideas.
+  Especially considering we want this game to be real time.
+
+  Many aspects of the implementation have been suprisingly hard to create.
+  I've also personally spent a lot of time (maybe too much), getting comfy with the tools, and ecosystem in node / js.
+  But we're finally near a milestone where many gameplay mechanics are going to be "played",
+  and some crucial decsions can get made to help solidify the gmae.
+
+** What we have
+
+  Two people can connect to the game, and interact with a board.
+  They can:
+  - Move pieces around
+  - Change stats on existing pieces
+  - Call commands
+
+  All of these actions are GUI driven, minus the calling of commands.
+
+  Moving pieces is fairly straightforward,
+  we don't limit /where/ someone can place something,
+  we'll manually have to be aware of what we're allowed to do.
+  That's fine, this gives us plenty of leway for experimentation
+
+  Stats are basically name/value pairs on existing pieces.
+  They affect appearance, and are used as data for the commands to act on.
+
+  Commands get invoked and affect the board.
+  They can have parameters, which can include particular pieces, or sides of the board.
+  This is where much of the meat is. We have commands that automate the painful parts of protoyping.
+  And we intend to use them as the basis of how the actual implementation works as well.
+
+** What we're going to do
+
+  We're going to try our best to simulate the game. We'll both have prompts to execute commands.
+  We'll respect the rules manually, and see what gameplay works looks like while trying many of our ideas.
+  Hopefully as we tighten the game up, maybe we can start getting more people involved in this process.
+  That would be ideal.
+
+** Something interesting...
+  To aid in running commands, and general flexibilty while playing, I built a small tool.
+  It lets you 'jack' into a running node application with one or more REPLs.
+  You run the server and the client application can connect (over the network).
+  Giving it a context gives your REPL clients easy access to important references.
+  If this sounds impressive, you may be interested in the [[http://nodejs.org/api/repl.html][node REPL]] documentation.
+  Most of this application is just built in node.js's standard libary.
+  It wasn't a lot of work.
+  I decided to package it up a little and put it on [[https://github.com/mikedmcfarland/repl-jack][github]], if you're interested.
