@@ -1,20 +1,28 @@
-* Finally some prototyping
+#+STARTUP: showall indent
+#+options: num:nil
+#+BEGIN_HTML
+---
+title: Finally some prototyping
+date: 2015-01-30
+tags: [ game,code ]
+---
+#+END_HTML
 
-** Where we've been
 
-  It's been far too long since anything was prototyped in It Rains Fish.
+
+* Where we've been
+
+  It's been far too long since anything was prototyped in it rains fish.
   A long time ago, some paper prototyping was done;
-  but it was pretty painful to do even simple games with paper.
-  This was still very helpful in eliminating many bad ideas, but it didn't let us
-  adequately test many ideas.
-  Especially considering we want this game to be real time.
+  but it was pretty painful, even for simple games. Lots of calculations, easy to make mistakes,
+  and the game was /supposed/ to be realtime. It was still very helpful. But it didn't give a feel for what the game would be like.
 
-  Many aspects of the implementation have been suprisingly hard to create.
-  I've also personally spent a lot of time (maybe too much), getting comfy with the tools, and ecosystem in node / js.
+  We should be doing this more, but, Some problems have been surprisingly time consuming to solve.
+  I've also spent a lot of time (probably too much), getting comfy with the tools, and ecosystem in node js.
   But we're finally near a milestone where many gameplay mechanics are going to be "played",
-  and some crucial decsions can get made to help solidify the gmae.
+  and I'm hopeful crucial decsions will be made.
 
-** What we have
+* What we have
 
   Two people can connect to the game, and interact with a board.
   They can:
@@ -37,15 +45,15 @@
   This is where much of the meat is. We have commands that automate the painful parts of protoyping.
   And we intend to use them as the basis of how the actual implementation works as well.
 
-** What we're going to do
+* What we're going to do
 
   We're going to try our best to simulate the game. We'll both have prompts to execute commands.
   We'll respect the rules manually, and see what gameplay works looks like while trying many of our ideas.
   Hopefully as we tighten the game up, maybe we can start getting more people involved in this process.
   That would be ideal.
 
-** Something interesting...
-  To aid in running commands, and general flexibilty while playing, I built a small tool.
+* Something interesting... REPL Jack
+  To aid in running commands, and general flexibilty while playing, I built a tool.
   It lets you 'jack' into a running node application with one or more REPLs.
   You run the server and the client application can connect (over the network).
   Giving it a context gives your REPL clients easy access to important references.
