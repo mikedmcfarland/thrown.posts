@@ -4,7 +4,7 @@
 ---
 title: Finally some prototyping
 date: 2015-01-30
-tags: [ game,code ]
+tags: [ game ]
 ---
 #+END_HTML
 
