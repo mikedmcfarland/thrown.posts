@@ -1,21 +1,16 @@
-#+STARTUP: showall indent
-#+options: num:nil
 #+BEGIN_HTML
 ---
-title: Parser Combinators: Love to parse!
-date: 2015-01-31
+title: Parser-Combinators
+date: 2015-02-03
+tags: [code]
 ---
 #+END_HTML
 
-#+BABEL: :exports both :tangle yes
-
----
-title: Parser Combinators: pure awesome.
-draft: true
----
+#+STARTUP: showall indent
+#+options: num:nil
 
 * Introduction
-
+Whenever I need to parse my own formats, I turn to parser combinator
 Want to parse your own language or file format?
 Want to do it the language your most productive in?
 Don't want to spend the next week reading about formal language theory before seeing some results?
@@ -23,35 +18,43 @@ Yeah me too!
 
 The first time I encountered Parser combinators was with reading some scala code, and I was instantly intrigued.
 Code, that read like the definition of the format, that made parsers, that could be composed into more complex parsers.
+CG3000D-RG
 Sweet.
 Well it turns out many languages have implementations of parser combinators,
 this post is going to focus one implementation in javascript: [[https://github.com/jneen/parsimmon][parsimmon]].
 
 
 ** Why are you parsing things?
-
 - I love plain text formats. When what your working with is visual, often a visual editor makes sense.
 - Often plain text tools are more expressive, flexible and easier to create.
 - Plus, as a programmer, I feel right at home manipulating text.
 
 ** what are parser combinators
-
 *** Some code
 #+begin_src js  :tangle yes
-  function funtimes(){
-    var Parsimmon = require('Parsimmon')
-    var string = Parsimmon.string
-    var regex  = Parsimmon.regex('')
-    regex('')
+  var Parsimmon = require('parsimmon')
 
-    return {hello:"world"}
-  }
+  var string = Parsimmon.string
+  var regex  = Parsimmon.regex
+  console.log('hello world')
+
+  return {hello:"world"}
 #+end_src
 
-#+begin_src js  :tangle yes
+#+begin_src js  :tangle index.js
   var keyword = string('if')
   var whitespace = regex(/w/)
   keyword.funtimes()
+#+end_src
+
+#+begin_src js :tangle test/ParserSpec.js
+  var assert = require('assert')
+  var parser = require('../parser-combinators')
+  describe("parser spec",function() {
+    it('should be true',function() {
+      assert(true)
+    })
+  })
 #+end_src
 
 

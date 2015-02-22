@@ -1,0 +1,12 @@
+#+STARTUP: showall indent
+#+options: num:nil
+#+BEGIN_HTML
+---
+title: Repl-Jack
+draft: true
+---
+#+END_HTML
+
+* TODO blog post repl-jack
+
+   show it in action on it rains (screen grabs)
