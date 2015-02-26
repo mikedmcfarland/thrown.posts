@@ -5,4 +5,4 @@ title: Rsi
 #+END_HTML
 #+FILETAGS: :blog:
 
-* TODO draft
+* TODO [#C] draft
