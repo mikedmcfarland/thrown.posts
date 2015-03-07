@@ -1,1 +1,1 @@
-/home/mike/projects/i3finder/README.md
+/home/mike/projects/node-i3finder/README.md
