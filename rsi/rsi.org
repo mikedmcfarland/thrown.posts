@@ -1,6 +1,7 @@
 #+BEGIN_HTML
 ---
 title: Rsi
+draft: true
 ---
 #+END_HTML
 #+FILETAGS: :blog:

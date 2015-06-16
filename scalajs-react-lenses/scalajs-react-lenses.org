@@ -1,0 +1,292 @@
+#+BEGIN_HTML
+---
+title: Fun with lenses in scalajs react
+tags: [code]
+draft: true
+---
+#+END_HTML
+
+#+Property: tangle src/main/scala/scalajs-react-lenses.scala
+#+Property: padline no
+#+Property: comments yes
+
+I've been working (freelance) on a single page app using [[https://github.com/japgolly/scalajs-react][scalajs-react]]
+
+and lenses helped me cleanup some code.
+They were fun and straightforward to get started with, so I wanted to quickly share my experience.
+
+* Some initialization stuff                                        :noexport:
+#+begin_src scala :noexport:
+  package thrown
+  import japgolly.scalajs.react._
+  import org.scalajs.dom.raw.Element
+  import scala.scalajs.js
+  import scala.scalajs.js.annotation.JSExport
+  import monocle.Lens
+  import scala.scalajs.js.Dynamic.global
+  import org.scalajs.dom
+  import japgolly.scalajs.react.React
+  import japgolly.scalajs.react.vdom.prefix_<^._
+  import thrown.bootstrap.Modal._
+  import thrown.bootstrap.Icon
+  import thrown.bootstrap.Bootstrap.{CommonStyle,Button}
+  import thrown.bootstrap.Bootstrap
+
+  @JSExport("LensesDemo")
+  object LensesDemo extends js.JSApp {
+
+    lazy val staticForm = Form.static()
+    var config = Config.default
+    lazy val configForm = ConfigForm.form()
+
+    @JSExport
+    def main(): Unit = {
+      global.console.log("hello world")
+    }
+
+    @JSExport
+    def demo(container:Element): Unit = {
+      val button =Demo.demoButton(Demo.Props("demo",configForm))
+
+      React.render(button, container)
+    }
+
+
+    @JSExport
+    def formPreview(container:Element):Unit = {
+      val button = Demo.demoButton(Demo.Props("static form",staticForm))
+      React.render(button,container)
+    }
+
+  }
+
+  object Demo {
+
+    case class State(show:Boolean)
+    case class Props(name:String, demo:ReactNode)
+    class Backend(t:BackendScope[Props,State]){
+      def show () = {
+        t.modState(s=>s.copy(show=true))
+      }
+      def hide () = {
+        t.modState(s=>s.copy(show=false))
+      }
+
+      def modal(props:Props) = {
+        val modal = new Modal with ClosableHeader{
+          def title = props.name
+          def closed = hide
+        }
+        modal.render(props.demo)
+      }
+    }
+    val demoButton = ReactComponentB[Props]("demo")
+        .initialState(State(false))
+        .backend(new Backend(_))
+        .render((P,S,B)=>{
+          <.div(
+            Button(B.show,CommonStyle.warning)(Icon.eye," Show " + P.name),
+            if(S.show) B.modal(P) else EmptyTag
+          )
+
+
+
+          // <.div(
+          //   if(S.show){
+          //     val modal = new Modal with ClosableHeader{
+          //       def title = P.name
+          //       def closed = B.hide
+          //     }
+          //     modal.render(P.demo)
+          //   }else{
+          //     EmptyTag
+          //   }
+          // )
+        })
+        .build
+  }
+#+end_src
+
+
+* The model
+
+
+Lets say our app has some configuration that can be edited by the user.
+We'll model it with some case classes:
+
+#+begin_src scala
+  case class Config(restricted: String, mailConfig:MailConfig)
+
+  object Config{
+
+    lazy val default = Config("thrownforaloop.com",MailConfig("localhost",9000,"mike"))
+  }
+
+  case class MailConfig(
+    host:String,
+    port:Int,
+    user:String
+  )
+#+end_src
+
+
+*  The editable form
+Lets make a few react components so that we can construct our form.
+We'll add bootstrap classes to make it a littler more friendly.
+
+#+begin_src scala
+  object Form{
+    case class Field(name:String,value:String,onChange:ReactEventI=>Unit)
+
+
+    val field = ReactComponentB[Field]("form-field")
+      .render(P=>{
+        val Field(name,value,onChange) = P
+        <.div(^.`class`:="form-group",
+          <.label(
+            ^.`for` :=name,
+            name.capitalize),
+          <.input(
+            ^.tpe := "text",
+            ^.`class`:="form-control",
+            ^.id := name,
+            ^.value := value,
+            ^.onChange ==> onChange
+          ))
+      })
+      .build
+
+    val form = ReactComponentB[Seq[Field]]("form")
+      .render(P=>{
+        <.div(^.`class`:="panel panel-default",
+          <.div(^.`class`:="panel",
+            <.div(^.`class`:="panel-heading",
+              "Config Edit"
+            ),
+            <.div(^.`class`:="panel-body",
+              <.form(
+                P.map(f => field.withKey(f.name)(f))
+              )
+            )
+          )
+        )
+      })
+    .build
+
+
+    // // creates an input field for the form.
+    // def field(name:String) = {
+    // }
+
+    // a static construction of our form
+    def static() = {
+      val Config(restricted,MailConfig(host,port,user)) = Config.default
+      val noOp = (e:ReactEventI) => {}
+      val fields = Seq(
+          Field("restricted" ,restricted    ,noOp),
+          Field("host"       ,host          ,noOp),
+          Field("user"       ,user          ,noOp),
+          Field("port"       ,port.toString ,noOp))
+
+      form(fields)
+    }
+  }
+#+end_src
+
+Now we have a form component that'll build or inputs given a sequence of =Field='s.
+You can see the results of =static= by clicking below.
+#+BEGIN_HTML
+  <div id="form-preview"></div>
+#+END_HTML
+
+* Making it dynamic
+
+Lets make this form actually edit the model.
+We'll do that by making another component which will construct the form.
+
+#+begin_src scala
+  object ConfigForm{
+    case class Props(onSubmit:Config=>Unit)
+    case class State(config:Config)
+
+    class Backend(t:BackendScope[Unit,State]){
+      def modifyRestricted(e:ReactEventI) = {
+        t.modState(s=>s.copy(config=s.config.copy(restricted=e.currentTarget.value)))
+      }
+      def modifyHost(e:ReactEventI) = {
+        t.modState(s=>s.copy(config=s.config.copy(mailConfig=s.config.mailConfig.copy(host=e.currentTarget.value))))
+      }
+      def modifyUser(e:ReactEventI) = {
+        t.modState(s=>s.copy(config=s.config.copy(mailConfig=s.config.mailConfig.copy(user=e.currentTarget.value))))
+      }
+
+    }
+
+    val form = ReactComponentB[Unit]("config-form")
+    .initialState(State(Config.default))
+    .backend(new Backend(_))
+      .render((P,S,B) =>{
+        val Config(restricted,MailConfig(host,port,user)) = S.config
+        val Field = Form.Field
+
+        val fields = Seq(
+          Field("restricted" ,restricted ,B.modifyRestricted),
+          Field("host"       ,host       ,B.modifyHost),
+          Field("user"       ,user       ,B.modifyUser))
+
+        Form.form(fields)
+      })
+    .buildU
+
+  }
+#+end_src
+
+* Maybe lenses will help
+
+#+begin_src scala
+  // val _config     = Lens[State,ConfigItem]      (_.config)     (v => s => s.copy(config=v))
+  // val _restricted = Lens[ConfigItem,String]     (_.restricted) (v => c => c.copy(restricted=v))
+  // val _mail       = Lens[ConfigItem,MailConfig] (_.mailConfig) (v => c => c.copy(mailConfig=v))
+  // val _host       = Lens[MailConfig,String]     (_.host)       (v => m => m.copy(host=v))
+  // val _port       = Lens[MailConfig,Int]        (_.port)       (v => m => m.copy(port=v))
+  // val _user       = Lens[MailConfig,String]     (_.user)       (v => m => m.copy(user=v))
+  // val _password   = Lens[MailConfig,String]     (_.password)   (v => m => m.copy(password=v))
+
+  // val _eventV     = Lens[ReactEventI,String]    (_.currentTarget.value)   (v => m => m.copy(password=v))
+  // val _mailconfig = _config composeLens _mail
+#+end_src
+
+
+
+* Some better ways
+
+* Demo
+#+BEGIN_HTML
+  <div id="demo"></div>
+#+END_HTML
+
+
+** Creating a small single page app in scalajs.
+** Editing a nested immutable structure.
+[[https://github.com/japgolly/scalajs-react][scalajs-react]]
+[[http://www.scala-js.org/][scala-js]]
+[[https://github.com/ochrons/scalajs-spa-tutorial][single page app tutorial]]
+[[http://japgolly.github.io/scalajs-react/#examples/external-var][ExternalVar example]]
+
+* Run the demos
+
+#+BEGIN_HTML
+  <script  src="https://cdnjs.cloudflare.com/ajax/libs/react/0.12.2/react-with-addons.min.js"></script>
+  <script  src="target/scala-2.11/scalajs-react-lenses-blog-fastopt.js"></script>
+  <script>
+    window.onload = function(){
+
+      var demo = thrown.LensesDemo()
+      var demoContainer = document.getElementById("demo")
+      demo.demo(demoContainer)
+
+      var formContainer = document.getElementById("form-preview")
+      demo.formPreview(formContainer)
+    }
+  </script>
+#+END_HTML

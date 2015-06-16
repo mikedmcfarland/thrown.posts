@@ -1,13 +1,12 @@
 #+BEGIN_HTML
 ---
 title: Parser-Combinators
-date: 2015-02-03
 tags: [code]
+draft: true
 ---
 #+END_HTML
 
 #+STARTUP: showall indent
-#+options: num:nil
 
 * Introduction
 Whenever I need to parse my own formats, I turn to parser combinator
@@ -18,11 +17,9 @@ Yeah me too!
 
 The first time I encountered Parser combinators was with reading some scala code, and I was instantly intrigued.
 Code, that read like the definition of the format, that made parsers, that could be composed into more complex parsers.
-CG3000D-RG
 Sweet.
 Well it turns out many languages have implementations of parser combinators,
 this post is going to focus one implementation in javascript: [[https://github.com/jneen/parsimmon][parsimmon]].
-
 
 ** Why are you parsing things?
 - I love plain text formats. When what your working with is visual, often a visual editor makes sense.
