@@ -6,75 +6,93 @@ draft: true
 ---
 #+END_HTML
 
-#+STARTUP: showall indent
+#+BABEL: :exports both :tangle yes
 
 * Introduction
-Whenever I need to parse my own formats, I turn to parser combinator
-Want to parse your own language or file format?
-Want to do it the language your most productive in?
-Don't want to spend the next week reading about formal language theory before seeing some results?
-Yeah me too!
-
-The first time I encountered Parser combinators was with reading some scala code, and I was instantly intrigued.
-Code, that read like the definition of the format, that made parsers, that could be composed into more complex parsers.
-Sweet.
-Well it turns out many languages have implementations of parser combinators,
-this post is going to focus one implementation in javascript: [[https://github.com/jneen/parsimmon][parsimmon]].
+I'm a big fan of parser combinators.
+They are simple enough to be used with a quick custom level format.
+They are flexible enough to parse your own programming language in.
+And, they make beautiful code.
+Many languages have implementations of parser combinators, but
+i'm going to be using an implementation in javascript: [[https://github.com/jneen/parsimmon][parsimmon]].
 
 ** Why are you parsing things?
-- I love plain text formats. When what your working with is visual, often a visual editor makes sense.
-- Often plain text tools are more expressive, flexible and easier to create.
-- Plus, as a programmer, I feel right at home manipulating text.
+I like plain text formats. I tend to favor their use over visual tools, for the same reason
+I favor markdown or org files over a WYSIWYG editor.
+As a programmer I'm right at home manipulating text with my editor of choice.
+Text is also easier to create, manipulate, and read with code.
 
-** what are parser combinators
-*** Some code
-#+begin_src js  :tangle yes
-  var Parsimmon = require('parsimmon')
+** What are parser combinators ?
+*** Parsers that you combine,
+Obvious from the name, but that's exactly what they are.
+You create small individual parsers.
+#+begin_src js :results output
+  const id     = Parsimmon.regex(/[A-Za-z_]/)
+  const digits = Parsimmon.string('/[0-9]+/')
 
-  var string = Parsimmon.string
-  var regex  = Parsimmon.regex
-  console.log('hello world')
-
-  return {hello:"world"}
+  console.log(digits.parse('validIdentifier'))
+  console.log(id.parse('27'))
 #+end_src
 
-#+begin_src js  :tangle index.js
-  var keyword = string('if')
-  var whitespace = regex(/w/)
-  keyword.funtimes()
+and you then combine them to form larger parsers.
+#+begin_src js
+  const atom = id.or(digits)
+
+  console.log(atom.parse('validIdentifier'))
+  console.log(atom.parse('27'))
 #+end_src
 
-#+begin_src js :tangle test/ParserSpec.js
-  var assert = require('assert')
-  var parser = require('../parser-combinators')
-  describe("parser spec",function() {
-    it('should be true',function() {
-      assert(true)
-    })
-  })
+*** They are monads
+Being a monad gives these parsers some useful qualities.
+
+**** They are immutable
+Once you've made a parser, it will never change.
+You can be free to reuse the indvidual parsers in any other composition,
+without worrying about it having a side affect on other parsers.
+
+**** They can be mapped with normal functions
+First we can create a parser which consumes strings that look like digits,
+and produces that string.
+#+begin_src js
+  const digitTokens = Parsimmon.string('/[0-9]+/')
+  const parsedTokens = digitTokens.parse('12345')
+  assert(parsedTokens.value,'12345')
+#+end_src
+This parser consumes a string, and produces that string.
+But maybe we want to produce an integer value from that string, not the string itself.
+#+begin_src js
+  const digitTokens = Parsimmon.string('/[0-9]+/')
+  const parsedTokens = digitTokens.parse('12345')
+  assert(parsedDigits.value,'12345')
+
+  const digits = digitTokens.map(token => parseInt(token))
+  const parsedDigits = digits.parse('12345')
+  assert(parsedDigits.value,12345)
 #+end_src
 
+Now we just made a new parser `digits` by mapping digitTokens with a function.
+That function simply takes in a string and returns a int, and doesn't have to deal with any other details.
+It's nice to be able to build up parsers from one to the next with simple mapping functions.
 
-*** Parsers that can be combined,
-Hmmmm... maybe that's obvious but it's actually really quite simple, you build individual parsers, and then compose them into a larger parser.
-Those parsers can also then be combined, to form new parsers...
+**** They help manage complexity
+Parser combinators consume a portion of the stream of characters,
+This is the real benefit to monads.
+- How much of the stream to do we consume.
+- Our new position after consuming text.
+- Our previous position now that we've failed and have to backtrack.
 
-*** A Monad
-Yeah don't worry, this is a good thing. The parser combinator
+* Example
+** Determine the format
+
+** Boil it down into grammer
+
+** Test the individual components
 
 
-I first encountered them while learning scala, and wished I had a practical reason to use them at my work. It took a while, but the day they made sense they were an absolute joy to work with.
+** Implement
 
-had no practical use at my day job for them. Until one day
-Messing with scala, I stumbled across a conce
-One day, I was writing a scala program, and
-Parser combinators are something I was introduced to while reading some scala code, and I was surprised by how
-Used them for content creation tools, like level descriptions.
-
-* What are they
-Monads which consume a stream of characters, and aquire the relevant parts.
-
-* Targets
+* Real world examples
+** Targets
 
 Used for describing levels, the parameters that made them up, including
 molecules, the state of the molecules, the ratios, spawn rate.
@@ -82,24 +100,5 @@ molecules, the state of the molecules, the ratios, spawn rate.
 Used for describing different molecules themselves. There were already existing
 formats but none that actually worked in c#/unity without a substantial fee.
 
-##Starting with the use cases
-
 Have some examples of the format itself, and what the results of parsing it
 will be.
-
-* Boil it down into grammer
-
-
-
-* Test the individual components
-
-After creating the grammer you are left with a bunch of indvidual, statelss,
-parseters. This makes testing significantly easier, since exposing the grammer
-is rather safe, and you can then write unit tests indvidually for each portion
-of the grammer.
-
-
-themselves, parsers. You can feed them bitsized parts of the file, and test
-that they gather the appropriate parameters.
-
-* They are stateless which makes
