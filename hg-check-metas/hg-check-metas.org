@@ -2,8 +2,9 @@
 #+options: num:nil
 #+BEGIN_HTML
 ---
-title: Never forget to commit a Unity3d meta file in HG again
+title: Never forget to commit a Unity3d meta file again
 date: 2015-06-16
+tags: [code]
 ---
 #+END_HTML
 
