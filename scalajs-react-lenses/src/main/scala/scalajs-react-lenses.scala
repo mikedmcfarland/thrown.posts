@@ -169,20 +169,31 @@ object ConfigForm{
 
   class Backend(t:BackendScope[Unit,State]){
     def modifyRestricted(e:ReactEventI) = {
-      t.modState(s=>s.copy(config=s.config.copy(restricted=e.currentTarget.value)))
+      t.modState(
+        s=>s.copy(
+          config=s.config.copy(
+            restricted=e.currentTarget.value)))
     }
     def modifyHost(e:ReactEventI) = {
-      t.modState(s=>s.copy(config=s.config.copy(mailConfig=s.config.mailConfig.copy(host=e.currentTarget.value))))
+      t.modState(
+        s=>s.copy(
+          config=s.config.copy(
+            mailConfig=s.config.mailConfig.copy(
+              host=e.currentTarget.value))))
     }
     def modifyUser(e:ReactEventI) = {
-      t.modState(s=>s.copy(config=s.config.copy(mailConfig=s.config.mailConfig.copy(user=e.currentTarget.value))))
+      t.modState(
+        s=>s.copy(
+          config=s.config.copy(
+            mailConfig=s.config.mailConfig.copy(
+              user=e.currentTarget.value))))
     }
 
   }
 
   val form = ReactComponentB[Unit]("config-form")
-  .initialState(State(Config.default))
-  .backend(new Backend(_))
+    .initialState(State(Config.default))
+    .backend(new Backend(_))
     .render((P,S,B) =>{
       val Config(restricted,MailConfig(host,port,user)) = S.config
       val Field = Form.Field
@@ -194,7 +205,7 @@ object ConfigForm{
 
       Form.form(fields)
     })
-  .buildU
+    .buildU
 
 }
 // Making\ it\ dynamic:1 ends here

@@ -1,0 +1,177 @@
+#+STARTUP: showall indent
+#+options: num:nil
+#+BEGIN_HTML
+---
+title: Never forget to commit a Unity3d meta file in HG again
+date: 2015-06-16
+---
+#+END_HTML
+
+
+If you've ever worked on a team using Unity3d, somebody has forgotten to commit a .meta file.
+It's fairly easy to do, and pretty hard to notice you're doing it (things still work for you).
+I've been bitten by this mistake plenty, from myself and others.
+It really sucks, but there's an easy solution.
+
+* Why this is a problem
+The .meta file holds GUID for the given asset, which is how the editor associates assets for serialized data (your prefabs and scenes).
+When you're serialized data references the wrong id, then you get missing references that show up like "Missing Script" in the editor.
+
+* What looks like
+Lets say we have two developers, Bob and Sue.
+- Bob creates a new behaviour called Foo.cs.
+- Unity automatically generates Foo.cs.meta with a new unique ID.
+- Bob adds and pushes Foo.cs, but not Foo.cs.meta.
+- Sue pulls down the code, and Foo.cs is added to her project.
+- Unity generates a Foo.cs.meta with a *new* unique ID (different then Bob's Foo.cs.meta)
+
+Now Bob and Sue have their own IDs for the asset. At best, whoever pushes their meta second
+will have a merge conflict (Which you then need to resolve by not merging! Choose one or the other.)
+
+But often it's not caught until later, and something like this happens next:
+- Bob creates a new prefab Bob.prefab, which has the behaviour Foo.
+- Sue creates a new prefab Sue.prefab, which has the behaviour Foo.
+- Each prefab is referencing Foo with a different ID.
+- Bob adds and pushes his Bob.prefab.
+- Sue pushes her Sue.prefab.
+- Bob pulls, get's a merge conflict with Foo.cs.meta.
+  - If he resolves with *his* he gets a "Missing Script" on Sue.prefab.
+  - If he resolves with *hers* he gets a "Missing Script" on Bob.prefab.
+- Sue pulls, and see's a "Missing Script" on Bob.prefab.
+
+Add a few more developers into the mix and you can easily have a more complicated example,
+Where people have repeated "fixed" the meta only to cause a different reference to go missing.
+And it can happen to more then just scripts, materials and prefabs can also have faulty references.
+Figuring these things out requires too much time, and it's not that fun to explain to new developers (especially artists).
+
+
+* A solution
+Solve it with software, don't let people share assets without metas.
+
+Most version control systems have hooks that you can run your own scripts in,
+Mercurials no different.
+
+You can make a pre-commit hook that will look at all your assets
+and make sure none are missing a meta.
+
+I've made one below. It's worked fine for windows and mac machines,
+and some version of it has been in every unity project I've done since.
+
+#+begin_src python
+  import os
+  import mercurial.commands
+
+  class HG:
+    def __init__(self,ui,repo):
+      self.ui = ui
+      self.repo = repo
+      self.files = self.getAddedFiles()
+
+    def existsInRepo(self, filename):
+      self.ui.pushbuffer()
+      mercurial.commands.locate(self.ui,self.repo,include=[filename])
+      files = self.ui.popbuffer().split("\n")
+
+      for repoFile in files:
+        if(pathsEqual(filename,repoFile)):
+          return True
+
+      return False
+
+    def getAddedFiles(self):
+      self.ui.pushbuffer()
+      mercurial.commands.status(self.ui,self.repo,no_status=True, added = True)
+      files = self.ui.popbuffer().split("\n")
+      return files
+
+    def filesExistInDir(self,dirname):
+      self.ui.pushbuffer()
+      mercurial.commands.locate(self.ui,self.repo,include=[dirname])
+      files = self.ui.popbuffer().split("\n")
+      files = filter(lambda x:x != "", files)
+      return len(files) > 0
+
+    def show(self, message):
+      self.ui.status(message + "\n")
+
+  def precommit(ui,repo, **kwargs):
+    hg = HG(ui,repo)
+    clean = checkFiles(hg)
+    return not clean;
+
+  def pathsEqual(a,b):
+    return os.path.normcase(a) == os.path.normcase(b)
+
+
+  def checkFiles(hg):
+
+    path = os.path.normcase("UnityProject/Assets/")
+
+    result = True
+    files = hg.files
+    for singleFile in files:
+      if singleFile == '':
+        continue
+
+      if not os.path.normcase(singleFile).startswith(path):
+        continue
+
+      isMetaFile = singleFile.endswith(".meta")
+
+      filename = singleFile if not isMetaFile else singleFile.replace(".meta", "")
+      metaFile = singleFile if isMetaFile else singleFile + ".meta"
+
+      isFolder = os.path.isdir(os.path.normcase(filename))
+
+      if isMetaFile:
+        if isFolder:
+          if not hg.filesExistInDir(filename):
+            hg.show("Commiting a meta file'" + metaFile +
+              "' for a directory which contains no files." )
+            return False
+        else:
+          if not hg.existsInRepo(filename):
+            hg.show("Commiting a meta file'" + metaFile +
+              "' without adding associated file '" + filename + "'.")
+            return False
+
+      else:
+        if not hg.existsInRepo(metaFile):
+          hg.show("Committing a file '" + filename +
+            "' without adding associated meta file '" + metaFile + "'.")
+          return False
+
+
+    return result
+#+end_src
+
+
+** Installation
+*** Configure your asset folder path
+
+in =checkFiles= alter the =path= variable so that it points to your assets directory.
+The current value reflects my projects, which generally have the unity project folder start at the path =UnityProject=.
+The script only checks the files under that path, and it's relative to your repo's root.
+
+*** Add the hook
+Mercurial needs you to [[https://mercurial.selenic.com/wiki/Hook][register the hook]] in your hg config.
+Everyone on the team should register and use this pre-commit hook in order for it to be effective.
+I keep them in hooks directory for the project for that reason.
+
+For example, Lets say you saved the above script to a file in your repo at =hooks/checkMetas.py=.
+
+Then you would add these lines to your =.hg/hgrc= file.
+
+  #+begin_src python
+    [hooks]
+    precommit.checkMetas = python:/pathToUnityRepo/hooks/checkMetas.py:precommit
+  #+end_src
+
+
+** Disclaimer
+- This *doesn't handle .meta files for directories*. I couldn't think of an elegant way
+  To locate directories from the hg API. Mercurial has no concept of them, files are just at paths.
+  This isn't such a big deal since, AFAIK, directories aren't referenced in serialized data.
+
+- I don't program in Python much so this likely *isn't idiomatic python*. But it works.
+- This script is provided as is.
